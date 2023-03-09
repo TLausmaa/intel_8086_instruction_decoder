@@ -58,21 +58,19 @@ void print_bin(uint8_t value)
 
 void print_assembly(int is_16_bit, const char* instruction, const char* operand1, const char* operand2)
 {
-    if (is_16_bit)
+    static char bits_printed = 0;
+    if (!bits_printed)
     {
-        printf("bits 16\n\n");
-    }
-    else
-    {
-        printf("bits 8\n\n");
+        printf(is_16_bit ? "bits 16\n\n" : "bits 8\n\n");
+        bits_printed = 1;
     }
 
     printf("%s %s, %s\n", instruction, operand1, operand2);
 }
 
-void lookup_instruction(uint8_t inst, uint8_t byte1, uint8_t byte2) 
+void decode_instruction(uint8_t instruction, uint8_t byte1, uint8_t byte2) 
 {
-    switch (inst) 
+    switch (instruction) 
     {
         case MOV_ENC: 
         {
@@ -80,8 +78,8 @@ void lookup_instruction(uint8_t inst, uint8_t byte1, uint8_t byte2)
             uint8_t mov_w_field = byte1 & MOV_W_MASK;
             uint8_t reg = byte2 & REG_MASK;
             uint8_t rm = byte2 & RM_MASK;
-            int is_destination_in_reg = mov_d_field == MOV_D_MASK;
-            int operates_on_word_data = mov_w_field == MOV_W_MASK;
+            char is_destination_in_reg = mov_d_field == MOV_D_MASK;
+            char operates_on_word_data = mov_w_field == MOV_W_MASK;
 
             const char* register1 = mem_to_mem_REG_and_RM_encodings[mov_w_field][reg >> 3];
             const char* register2 = mem_to_mem_REG_and_RM_encodings[mov_w_field][rm];
@@ -96,10 +94,21 @@ void lookup_instruction(uint8_t inst, uint8_t byte1, uint8_t byte2)
     }
 }
 
-int main() 
+int main(int argc, char **argv) 
 {
-    Binary container = read_binary_instructions("listing_37_mov");
-    uint8_t encoded_instruction = (container.data[0] & INST_MASK);
-    lookup_instruction(encoded_instruction, container.data[0], container.data[1]);
+    if (argc < 2) 
+    {
+        printf("Provide binary file to decode as the first argument. Usage: ./decoder [filename]\n");
+        exit(1);
+    }
+
+    Binary instructions = read_binary_instructions(argv[1]);
+
+    for (int i = 0; i < instructions.byte_count; i += 2) 
+    {
+        uint8_t encoded_instruction = (instructions.data[i] & INST_MASK);
+        decode_instruction(encoded_instruction, instructions.data[i], instructions.data[i+1]);        
+    }
+
     return 0;
 }
