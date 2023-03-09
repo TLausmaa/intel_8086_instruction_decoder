@@ -19,8 +19,8 @@ const char* mem_to_mem_REG_and_RM_encodings[2][8] =
 
 typedef struct Binary
 {
-	uint8_t* data;
-	unsigned int byte_count;
+    uint8_t* data;
+    unsigned int byte_count;
 } Binary;
 
 Binary read_binary_instructions(const char* filename)
@@ -98,7 +98,7 @@ void lookup_instruction(uint8_t inst, uint8_t byte1, uint8_t byte2)
 
 int main() 
 {
-	Binary container = read_binary_instructions("listing_37_mov");
+    Binary container = read_binary_instructions("listing_37_mov");
     uint8_t encoded_instruction = (container.data[0] & INST_MASK);
     lookup_instruction(encoded_instruction, container.data[0], container.data[1]);
     return 0;
