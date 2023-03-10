@@ -56,12 +56,12 @@ void print_bin(uint8_t value)
     putc('\n', stdout);
 }
 
-void print_assembly(int is_16_bit, const char* instruction, const char* operand1, const char* operand2)
+void print_assembly(const char* instruction, const char* operand1, const char* operand2)
 {
     static char bits_printed = 0;
     if (!bits_printed)
     {
-        printf(is_16_bit ? "bits 16\n\n" : "bits 8\n\n");
+        printf("bits 16\n\n");
         bits_printed = 1;
     }
 
@@ -79,13 +79,13 @@ void decode_instruction(uint8_t instruction, uint8_t byte1, uint8_t byte2)
             uint8_t reg = byte2 & REG_MASK;
             uint8_t rm = byte2 & RM_MASK;
             char is_destination_in_reg = mov_d_field == MOV_D_MASK;
-            char operates_on_word_data = mov_w_field == MOV_W_MASK;
+            //char operates_on_word_data = mov_w_field == MOV_W_MASK;
 
             const char* register1 = mem_to_mem_REG_and_RM_encodings[mov_w_field][reg >> 3];
             const char* register2 = mem_to_mem_REG_and_RM_encodings[mov_w_field][rm];
             const char* source = is_destination_in_reg ? register2 : register1;
             const char* destination = is_destination_in_reg ? register1 : register2;
-            print_assembly(operates_on_word_data, MOV, destination, source);
+            print_assembly(MOV, destination, source);
         }
             break;
         default: 
