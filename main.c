@@ -18,14 +18,14 @@ const int instruction_masks[4] =
 };
 
 // Indexed by: W, R/M 
-const char* register_mode_reg_rm_encodings[2][8] = 
+const char* register_table[2][8] = 
 {
     {"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh"},
     {"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"}
 };
 
 // Indexed by: R/M
-const char* reg_to_mem_effective_address_calculation[8] = 
+const char* effective_address_table[8] = 
 {
     "bx + si", "bx + di", "bp + si", "bp + di", "si", "di", "bp", "bx"
 };
@@ -114,8 +114,8 @@ int decode_instruction(Binary* instructions, int read_position)
 
                 if (mod_field == 0xC0)
                 {
-                    const char* register1 = register_mode_reg_rm_encodings[mov_w_field][reg >> 3];
-                    const char* register2 = register_mode_reg_rm_encodings[mov_w_field][rm];
+                    const char* register1 = register_table[mov_w_field][reg >> 3];
+                    const char* register2 = register_table[mov_w_field][rm];
                     const char* source = d_bit_on ? register2 : register1;
                     const char* destination = d_bit_on ? register1 : register2;
                     print_assembly_ss(MOV, destination, source);
@@ -124,11 +124,20 @@ int decode_instruction(Binary* instructions, int read_position)
                 else 
                 {
                     char* operand2 = NULL;
-                    const char* register1 = register_mode_reg_rm_encodings[mov_w_field][reg >> 3];
-                    const char* address = reg_to_mem_effective_address_calculation[rm];
+                    const char* register1 = register_table[mov_w_field][reg >> 3];
+                    const char* address = effective_address_table[rm];
                     uint16_t displacement = 0;
-                    if (mod_field == 0x40) displacement = instructions->data[read_position + 2];
-                    if (mod_field == 0x80) displacement = (instructions->data[read_position + 3] << 8) + instructions->data[read_position + 2];
+                    
+                    if (mod_field == 0x40) 
+                    {
+                        displacement = instructions->data[read_position + 2];
+                    }
+                    
+                    if (mod_field == 0x80 || (mod_field == 0x00 && rm == 0x06)) 
+                    {
+                        displacement = (instructions->data[read_position + 3] << 8) + instructions->data[read_position + 2];
+                    } 
+                    
                     format_effective_address_calculation(&operand2, address, displacement);
                     const char* source = d_bit_on ? operand2 : register1;
                     const char* destination = d_bit_on ? register1 : operand2;
@@ -143,7 +152,7 @@ int decode_instruction(Binary* instructions, int read_position)
                 uint8_t w_field = (byte1 & 0x08) >> 3;
                 uint8_t reg_field = byte1 & 0x07;
                 char is_16_bit = w_field == 0x01;
-                const char* reg = register_mode_reg_rm_encodings[w_field][reg_field];
+                const char* reg = register_table[w_field][reg_field];
                 if (is_16_bit)
                 {
                     uint8_t byte3 = instructions->data[read_position + 2];
