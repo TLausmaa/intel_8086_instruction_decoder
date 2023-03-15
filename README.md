@@ -1,7 +1,7 @@
 # intel_8086_instruction_decoder
 Software implementation of Intel 8086/88 instruction decoding.
 
-* Implements MOV instruction decoding. 
+* Implements a subset of MOV instructions. 
 
 Done as an exercise for the "Performance-Aware Programming" series by Casey Muratori: https://www.computerenhance.com/
 
