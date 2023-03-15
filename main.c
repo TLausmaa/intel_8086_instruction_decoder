@@ -17,11 +17,17 @@ const int instruction_masks[4] =
     0xF0, 0xF8, 0xFC, 0xFE
 };
 
-// W-bit used to index these
+// Indexed by: W, R/M 
 const char* mem_to_mem_REG_and_RM_encodings[2][8] = 
 {
     {"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh"},
     {"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"}
+};
+
+// Indexed by: R/M
+const char* reg_to_mem_effective_address_calculation[8] = 
+{
+    "bx + si", "bx + di", "bp + si", "bp + di", "si", "di", "bp", "bx"
 };
 
 typedef struct Binary
@@ -32,26 +38,26 @@ typedef struct Binary
 
 Binary read_binary_instructions(const char* filename)
 {
-	FILE* f = fopen(filename, "rb");
-	
-	if (f == NULL) 
-	{
-		printf("Reading binary instructions failed\n");
-		exit(1);
-	}
+    FILE* f = fopen(filename, "rb");
 
-	fseek(f, 0, SEEK_END);
-	long fsize = ftell(f);
-	fseek(f, 0, SEEK_SET);
+    if (f == NULL) 
+    {
+        printf("Reading binary instructions failed\n");
+        exit(1);
+    }
 
-	uint8_t* binary = malloc(sizeof(uint8_t) * fsize);
-	fread(binary, fsize, 1, f);
-	fclose(f);
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
 
-	Binary container;
-	container.data = binary;
-	container.byte_count = fsize;
-	return container;
+    uint8_t* binary = malloc(sizeof(uint8_t) * fsize);
+    fread(binary, fsize, 1, f);
+    fclose(f);
+
+    Binary container;
+    container.data = binary;
+    container.byte_count = fsize;
+    return container;
 }
 
 void print_bin(uint8_t value)
@@ -73,6 +79,19 @@ void print_assembly_si(const char* instruction, const char* operand1, const int 
     printf("%s %s, %d\n", instruction, operand1, operand2);
 }
 
+void format_effective_address_calculation(char** result, const char* address, uint16_t displacement)
+{
+    *result = malloc(sizeof(char) * 64);
+    if (displacement == 0) 
+    {
+        snprintf(*result, 63, "[%s]", address);    
+    }
+    else
+    {
+        snprintf(*result, 63, "[%s + %d]", address, displacement);
+    }
+}
+
 int decode_instruction(Binary* instructions, int read_position)
 {
     uint8_t byte1 = instructions->data[read_position];
@@ -88,16 +107,58 @@ int decode_instruction(Binary* instructions, int read_position)
                 uint8_t byte2 = instructions->data[read_position + 1];
                 uint8_t mov_d_field = byte1 & MOV_D_MASK;
                 uint8_t mov_w_field = byte1 & MOV_W_MASK;
+                uint8_t mod_field = byte2 & 0xC0;
                 uint8_t reg = byte2 & REG_MASK;
                 uint8_t rm = byte2 & RM_MASK;
-                char is_destination_in_reg = mov_d_field == MOV_D_MASK;
+                char d_bit_on = mov_d_field == MOV_D_MASK;
 
-                const char* register1 = mem_to_mem_REG_and_RM_encodings[mov_w_field][reg >> 3];
-                const char* register2 = mem_to_mem_REG_and_RM_encodings[mov_w_field][rm];
-                const char* source = is_destination_in_reg ? register2 : register1;
-                const char* destination = is_destination_in_reg ? register1 : register2;
-                print_assembly_ss(MOV, destination, source);
-                return 1;
+                if (mod_field == 0xC0)
+                {
+                    const char* register1 = mem_to_mem_REG_and_RM_encodings[mov_w_field][reg >> 3];
+                    const char* register2 = mem_to_mem_REG_and_RM_encodings[mov_w_field][rm];
+                    const char* source = d_bit_on ? register2 : register1;
+                    const char* destination = d_bit_on ? register1 : register2;
+                    print_assembly_ss(MOV, destination, source);
+                    return 1;
+                }
+                else if (mod_field == 0x00)
+                {
+                    char* operand2 = NULL;
+                    const char* register1 = mem_to_mem_REG_and_RM_encodings[mov_w_field][reg >> 3];
+                    const char* address = reg_to_mem_effective_address_calculation[rm];
+                    format_effective_address_calculation(&operand2, address, 0);
+                    const char* source = d_bit_on ? operand2 : register1;
+                    const char* destination = d_bit_on ? register1 : operand2;
+                    print_assembly_ss(MOV, destination, source);
+                    free(operand2);
+                    return 1;
+                }
+                else if (mod_field == 0x40) // 8-bit displacement
+                {
+                    char* operand2 = NULL;
+                    uint8_t displacement_8bit = instructions->data[read_position + 2];
+                    const char* register1 = mem_to_mem_REG_and_RM_encodings[mov_w_field][reg >> 3];
+                    const char* address = reg_to_mem_effective_address_calculation[rm];
+                    format_effective_address_calculation(&operand2, address, displacement_8bit);
+                    const char* source = d_bit_on ? operand2 : register1;
+                    const char* destination = d_bit_on ? register1 : operand2;
+                    print_assembly_ss(MOV, destination, source);
+                    free(operand2);
+                    return 2;
+                }
+                else if (mod_field == 0x80) // 16-bit displacement
+                {
+                    char* operand2 = NULL;
+                    uint16_t displacement = (instructions->data[read_position + 3] << 8) + instructions->data[read_position + 2];
+                    const char* register1 = mem_to_mem_REG_and_RM_encodings[mov_w_field][reg >> 3];
+                    const char* address = reg_to_mem_effective_address_calculation[rm];
+                    format_effective_address_calculation(&operand2, address, displacement);
+                    const char* source = d_bit_on ? operand2 : register1;
+                    const char* destination = d_bit_on ? register1 : operand2;
+                    print_assembly_ss(MOV, destination, source);
+                    free(operand2);
+                    return 3;
+                }
             }
             case MOV_IMMEDIATE_TO_REG_ENC: 
             {
