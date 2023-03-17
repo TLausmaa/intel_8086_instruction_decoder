@@ -7,7 +7,7 @@ Done as an exercise for the "Performance-Aware Programming" series by Casey Mura
 
 ### Building
 
-Simply compiling `main.c` with any C compiler should be enough, no build tools are needed. For example:    
+Simply compiling `main.c` with any C compiler is enough, no build tools are needed. For example:    
 
 `gcc main.c -o decoder`
 
