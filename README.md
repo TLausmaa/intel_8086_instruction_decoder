@@ -5,6 +5,12 @@ Software implementation of Intel 8086/88 instruction decoding.
 
 Done as an exercise for the "Performance-Aware Programming" series by Casey Muratori: https://www.computerenhance.com/
 
+### Building
+
+Simply compiling `main.c` with any C compiler should be enough, no build tools are needed. For example:    
+
+`gcc main.c -o decoder`
+
 ### Usage
 
 `./decoder [filename]`
