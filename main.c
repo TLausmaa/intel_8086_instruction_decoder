@@ -2,12 +2,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define MOV_REG_TO_REG_ENC 0x88
-#define MOV_IMMEDIATE_TO_REG_ENC 0xB0
-#define MOV_D_MASK 0x02
-#define MOV_W_MASK 0x01
-#define REG_MASK 0x38 // 00111000
-#define RM_MASK  0x07 // 00000111
+#define MOV_REG_TO_REG_ENC 0b10001000
+#define MOV_IMMEDIATE_TO_REG_ENC 0b10110000
+
+#define MOV_D_MASK 0b00000010
+#define MOV_W_MASK 0b00000001
+#define REG_MASK 0b00111000
+#define RM_MASK 0b00000111
 #define MOV "mov"
 
 const int INSTRUCTION_MASKS_COUNT = 4;
