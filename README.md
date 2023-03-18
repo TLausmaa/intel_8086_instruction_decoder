@@ -1,9 +1,15 @@
 # intel_8086_instruction_decoder
 Software implementation of Intel 8086/88 instruction decoding.
 
-* Implements MOV instruction decoding. 
+* Implements a subset of MOV instructions. 
 
 Done as an exercise for the "Performance-Aware Programming" series by Casey Muratori: https://www.computerenhance.com/
+
+### Building
+
+Simply compiling `main.c` with any C compiler is enough, no build tools are needed. For example:    
+
+`gcc main.c -o decoder`
 
 ### Usage
 
